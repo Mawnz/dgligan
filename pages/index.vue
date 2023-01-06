@@ -49,6 +49,9 @@
               {{ Math.round((calcPlayerTotalThrows(player) / calcPlayerTotalPlayedHoles(player)) * 100) / 100 }}
             </td>
             <td>
+              {{ calcPlayerPossibleParTotal(player) }}
+            </td>
+            <td>
               {{ calcPlayerParTotal(player) }}
             </td>
           </tr>
@@ -171,6 +174,9 @@ export default defineComponent({
       }
       return total;
     },
+    calcPlayerPossibleParTotal(player: Player): number {
+      return Object.values(player.competitions).reduce((total, comp) => total + comp.playerScores!.reduce((tot, { par }) => tot + par, 0), 0);
+    },
     calcPlayerParTotal(player: Player): number {
       let total = 0;
       let comps = player.competitions;
@@ -178,10 +184,9 @@ export default defineComponent({
         let diff = comps[c].playerScores!.reduce((sum, { score }) => sum + score, 0) - comps[c].playerScores!.reduce((su, { par })  => su + par, 0);
         total += diff;
       }
-
       return total;
     },
-      calcPlayerAvgThrows(comps: Competition[]): number {
+    calcPlayerAvgThrows(comps: Competition[]): number {
       let avg = 0;
       let playerHolesTotal = 0;
       for(let c of comps) {
