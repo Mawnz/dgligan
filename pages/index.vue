@@ -1,6 +1,17 @@
 <template>
-  <div class="h-full container flex-col">
-    <section id="overview">
+  <div class="h-full snap-y overflow-y-auto">
+    <section id="overview" class="bg-rose-100 snap-start p-10">
+      <h1>Tja va kul </h1>
+      <button @click="goto('start')" class="downbtn rounded-[50%] h-20 w-20 bg-blue-200 p-2">
+        <ArrowDownIcon class=""></ArrowDownIcon>
+      </button>
+    </section>
+    <section id="start" class="bg-rose-200 snap-start p-10">
+      <button @click="goto('table')" class="downbtn rounded-[50%] h-20 w-20 bg-blue-200 p-2">
+        <ArrowDownIcon></ArrowDownIcon>
+      </button>
+    </section>
+    <section id="table" class="bg-rose-100 snap-start p-10">
       <table class="table-auto text-gray-500">
         <thead class="text-xs text-gray-700 uppercase bg-gray-50">
           <th v-for="h in headers" :key="h.value">
@@ -20,6 +31,8 @@
 </template>
 
 <script lang="ts">
+import { ArrowDownIcon } from "@heroicons/vue/24/outline";
+
 import { defineComponent } from "vue";
 
 interface Hole {
@@ -64,27 +77,40 @@ interface PlayerRow extends Player {
 interface TableHeader {
   text: string;
   value: string;
-  curated?: (val: any) => string
+  curated?: (val: any) => string;
 }
 
 export default defineComponent({
+  components: {
+    ArrowDownIcon,
+  },
   data() {
     return {
       comps: {} as { [key: string]: Competition },
       headers: [
-        { text: 'Namn', value: 'name' },
-        { text: 'Totalt spelade hål', value: 'playedHoles' },
-        { text: 'Totalt antal kast', value: 'totalThrows' },
-        { text: 'Totalt spelade rundor', value: 'playedRounds' },
-        { text: 'Kast per hål (snitt)', value: 'avgThrowsPerHole' },
-        { text: 'Total möjlig par', value: 'totalPossiblePar' },
-        { text: 'Total par', value: 'totalPar', curated: (par: number) => par < 0 ? `-${par}` : ( par > 0 ? `+${par}` : par ) }, 
-        { text: 'Snitt per runda', value: 'avgParPerRound' },
-        { text: 'Antal birdie', value: 'noBirdies' },
-        { text: 'Antal par', value: 'noPar' },
-        { text: 'Antal boogie', value: 'noBoogies' },
-        { text: 'Antal > +1', value: 'noAboveBoogies' },
-      ] as TableHeader[]
+        { text: "Namn", value: "name" },
+        { text: "Totalt spelade hål", value: "playedHoles" },
+        { text: "Totalt antal kast", value: "totalThrows" },
+        { text: "Totalt spelade rundor", value: "playedRounds" },
+        { text: "Kast per hål (snitt)", value: "avgThrowsPerHole" },
+        { text: "Total möjlig par", value: "totalPossiblePar" },
+        {
+          text: "Total par",
+          value: "totalPar",
+          curated: (par: number) =>
+            par < 0 ? `-${par}` : par > 0 ? `+${par}` : par,
+        },
+        {
+          text: "Snitt per runda",
+          value: "avgParPerRound",
+          curated: (par: number) =>
+            par < 0 ? `-${par}` : par > 0 ? `+${par}` : par,
+        },
+        { text: "Antal birdie", value: "noBirdies" },
+        { text: "Antal par", value: "noPar" },
+        { text: "Antal boogie", value: "noBoogies" },
+        { text: "Antal > +1", value: "noAboveBoogies" },
+      ] as TableHeader[],
     };
   },
   created() {
@@ -149,17 +175,20 @@ export default defineComponent({
     });
   },
   methods: {
+    goto(id: string) {
+      this.$el.querySelector(`#${id}`).scrollIntoView({ behavior: 'smooth' })
+    },
     calcPlayerTotalPlayedHoles(player: Player): number {
       return Object.values(player.competitions).reduce(
-        (throws, comp) =>
-          throws + comp.playerScores!.length ?? 0,
+        (throws, comp) => throws + comp.playerScores!.length ?? 0,
         0
       );
     },
     calcPlayerTotalThrows(player: Player): number {
       return Object.values(player.competitions).reduce(
         (throws, comp) =>
-          throws + comp.playerScores!.reduce((tot, { score }) => tot + score, 0),
+          throws +
+          comp.playerScores!.reduce((tot, { score }) => tot + score, 0),
         0
       );
     },
@@ -170,7 +199,10 @@ export default defineComponent({
         0
       );
     },
-    calcPlayerNumberOfScore(player: Player, scoreComparison: (score: number, par: number) => number) {
+    calcPlayerNumberOfScore(
+      player: Player,
+      scoreComparison: (score: number, par: number) => number
+    ) {
       return Object.values(player.competitions).reduce(
         (birdies, comp) =>
           birdies +
@@ -208,40 +240,82 @@ export default defineComponent({
       return Object.values(players);
     },
     playersFull(): PlayerRow[] {
-      return this.players.map(p => ({
+      return this.players.map((p) => ({
         ...p,
         playedHoles: this.calcPlayerTotalPlayedHoles(p),
         playedRounds: Object.values(p.competitions).length,
         totalThrows: this.calcPlayerTotalThrows(p),
         totalPossiblePar: this.calcPlayerPossibleParTotal(p),
-        totalPar: this.calcPlayerTotalThrows(p) - this.calcPlayerPossibleParTotal(p),
-        noBirdies: this.calcPlayerNumberOfScore(p, (score, par) => score - par === -1 ? 1 : 0),
-        noPar: this.calcPlayerNumberOfScore(p, (score, par) => score - par === 0 ? 1 : 0),
-        noBoogies: this.calcPlayerNumberOfScore(p, (score, par) => score - par === 1 ? 1 : 0),
-        noAboveBoogies: this.calcPlayerNumberOfScore(p, (score, par) => score - par > 1 ? 1 : 0),
-        avgThrowsPerHole: Math.round((this.calcPlayerTotalThrows(p) /this.calcPlayerTotalPlayedHoles(p)) * 100) / 100,
-        avgParPerRound: Math.round((this.calcPlayerTotalThrows(p) - this.calcPlayerPossibleParTotal(p)) / Object.values(p.competitions).length)
-      }))
-    }
+        totalPar:
+          this.calcPlayerTotalThrows(p) - this.calcPlayerPossibleParTotal(p),
+        noBirdies: this.calcPlayerNumberOfScore(p, (score, par) =>
+          score - par === -1 ? 1 : 0
+        ),
+        noPar: this.calcPlayerNumberOfScore(p, (score, par) =>
+          score - par === 0 ? 1 : 0
+        ),
+        noBoogies: this.calcPlayerNumberOfScore(p, (score, par) =>
+          score - par === 1 ? 1 : 0
+        ),
+        noAboveBoogies: this.calcPlayerNumberOfScore(p, (score, par) =>
+          score - par > 1 ? 1 : 0
+        ),
+        avgThrowsPerHole:
+          Math.round(
+            (this.calcPlayerTotalThrows(p) /
+              this.calcPlayerTotalPlayedHoles(p)) *
+              100
+          ) / 100,
+        avgParPerRound: Math.round(
+          (this.calcPlayerTotalThrows(p) - this.calcPlayerPossibleParTotal(p)) /
+            Object.values(p.competitions).length
+        ),
+      }));
+    },
   },
 });
 </script>
 
 <style scoped>
-#overview {
-  backgorund-color: red;
+section {
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+
+.downbtn {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  animation: pointdown 1s infinite ease-in-out;
+}
+
+@keyframes pointdown {
+  0% {
+    transform: translate(-50%, 0);
+  }
+
+
+
+  50% {
+    transform: translate(-50%, 8px);
+  }
+
+
+
+  100% {
+    transform: translate(-50%, 0);
+  }
 }
 
 tr {
   border-bottom: solid 1px #e2e8f0;
 }
 
-tr:nth-child(even), thead {
-  background:#e5e7eb;
-}
-
-table {
-  margin: 20px;
+tr:nth-child(even),
+thead {
+  background: #e5e7eb;
 }
 
 th {
@@ -249,10 +323,12 @@ th {
   cursor: pointer;
 }
 
-th:first-child, td:first-child {
+th:first-child,
+td:first-child {
   padding-left: 15px;
 }
-th:last-child, td:last-child {
+th:last-child,
+td:last-child {
   padding-right: 15px;
 }
 

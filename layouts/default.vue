@@ -1,6 +1,8 @@
 <template>
-    <div>
+    <div class="h-full flex flex-col">
         <nav-bar></nav-bar>
-        <slot></slot>
+        <div class="grow">
+            <slot></slot>
+        </div>
     </div>
 </template>
