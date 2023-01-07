@@ -1,58 +1,16 @@
 <template>
   <div class="h-full container flex-col">
     <section id="overview">
-      <table>
-        <tr>
-          <th>
-            Namn
+      <table class="table-auto text-gray-500">
+        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+          <th v-for="h in headers" :key="h.value">
+            {{ h.text }}
           </th>
-          <th>
-            Totalt spelade hål
-          </th>
-          <th>
-            Totalt antal kast
-          </th>
-          <th>
-            Kast per hål (snitt)
-          </th>
-          <th>
-            Total möjlig par
-          </th>
-          <th>
-            Total spelad par
-          </th>
-          <th>
-            Antal birdie
-          </th>
-          <th>
-            Antal par
-          </th>
-          <th>
-            Antal boogie
-          </th>
-          <th>
-            Antal > +1
-          </th>
-        </tr>
+        </thead>
         <tbody>
-          <tr v-for="player in players" :key="player.name">
-            <td>
-              {{ player.name }}
-            </td>
-            <td>
-              {{ calcPlayerTotalPlayedHoles(player) }}
-            </td>
-            <td>
-              {{ calcPlayerTotalThrows(player) }}
-            </td>
-            <td>
-              {{ Math.round((calcPlayerTotalThrows(player) / calcPlayerTotalPlayedHoles(player)) * 100) / 100 }}
-            </td>
-            <td>
-              {{ calcPlayerPossibleParTotal(player) }}
-            </td>
-            <td>
-              {{ calcPlayerParTotal(player) }}
+          <tr v-for="player in playersFull" :key="player.name">
+            <td v-for="h in headers" :key="h">
+              {{ h.curated ? h.curated(player[h.value]) : player[h.value] }}
             </td>
           </tr>
         </tbody>
@@ -85,14 +43,48 @@ interface Competition {
 }
 
 interface Player {
-  competitions: { [key:string]: Competition };
+  competitions: { [key: string]: Competition };
   name: string;
+}
+
+interface PlayerRow extends Player {
+  playedHoles: number;
+  totalThrows: number;
+  playedRounds: number;
+  avgThrowsPerHole: number;
+  totalPossiblePar: number;
+  totalPar: number;
+  avgParPerRound: number;
+  noBirdies: number;
+  noPar: number;
+  noBoogies: number;
+  noAboveBoogies: number;
+}
+
+interface TableHeader {
+  text: string;
+  value: string;
+  curated?: (val: any) => string
 }
 
 export default defineComponent({
   data() {
     return {
       comps: {} as { [key: string]: Competition },
+      headers: [
+        { text: 'Namn', value: 'name' },
+        { text: 'Totalt spelade hål', value: 'playedHoles' },
+        { text: 'Totalt antal kast', value: 'totalThrows' },
+        { text: 'Totalt spelade rundor', value: 'playedRounds' },
+        { text: 'Kast per hål (snitt)', value: 'avgThrowsPerHole' },
+        { text: 'Total möjlig par', value: 'totalPossiblePar' },
+        { text: 'Total par', value: 'totalPar', curated: (par: number) => par < 0 ? `-${par}` : ( par > 0 ? `+${par}` : par ) }, 
+        { text: 'Snitt per runda', value: 'avgParPerRound' },
+        { text: 'Antal birdie', value: 'noBirdies' },
+        { text: 'Antal par', value: 'noPar' },
+        { text: 'Antal boogie', value: 'noBoogies' },
+        { text: 'Antal > +1', value: 'noAboveBoogies' },
+      ] as TableHeader[]
     };
   },
   created() {
@@ -158,43 +150,37 @@ export default defineComponent({
   },
   methods: {
     calcPlayerTotalPlayedHoles(player: Player): number {
-      let total = 0;
-      let comps = player.competitions;
-      for(let c in comps) {
-        total += comps[c].playerScores!.length
-      }
-      return total;
+      return Object.values(player.competitions).reduce(
+        (throws, comp) =>
+          throws + comp.playerScores!.length ?? 0,
+        0
+      );
     },
     calcPlayerTotalThrows(player: Player): number {
-      let total = 0;
-      let comps = player.competitions;
-      for(let c in comps) {
-        let throws = comps[c].playerScores!.reduce((sum, { score }) => sum + score, 0)
-        total += throws;
-      }
-      return total;
+      return Object.values(player.competitions).reduce(
+        (throws, comp) =>
+          throws + comp.playerScores!.reduce((tot, { score }) => tot + score, 0),
+        0
+      );
     },
     calcPlayerPossibleParTotal(player: Player): number {
-      return Object.values(player.competitions).reduce((total, comp) => total + comp.playerScores!.reduce((tot, { par }) => tot + par, 0), 0);
+      return Object.values(player.competitions).reduce(
+        (total, comp) =>
+          total + comp.playerScores!.reduce((tot, { par }) => tot + par, 0),
+        0
+      );
     },
-    calcPlayerParTotal(player: Player): number {
-      let total = 0;
-      let comps = player.competitions;
-      for(let c in comps) {
-        let diff = comps[c].playerScores!.reduce((sum, { score }) => sum + score, 0) - comps[c].playerScores!.reduce((su, { par })  => su + par, 0);
-        total += diff;
-      }
-      return total;
+    calcPlayerNumberOfScore(player: Player, scoreComparison: (score: number, par: number) => number) {
+      return Object.values(player.competitions).reduce(
+        (birdies, comp) =>
+          birdies +
+          comp.playerScores!.reduce(
+            (b, { score, par }) => b + scoreComparison(score, par),
+            0
+          ),
+        0
+      );
     },
-    calcPlayerAvgThrows(comps: Competition[]): number {
-      let avg = 0;
-      let playerHolesTotal = 0;
-      for(let c of comps) {
-        avg += 1;
-      }
-
-      return avg;
-    }
   },
   computed: {
     competitions(): Competition[] {
@@ -202,30 +188,40 @@ export default defineComponent({
     },
     players(): Player[] {
       const players = Object.values(this.comps).reduce((players, comp) => {
-        for(let player in comp.scores) {
-          if(!players.hasOwnProperty(player)) {
+        for (let player in comp.scores) {
+          if (!players.hasOwnProperty(player)) {
             players[player] = {
               name: player,
-              competitions: {}
-            }
+              competitions: {},
+            };
           }
-          if(!players[player].competitions.hasOwnProperty(comp.name)) {
+          if (!players[player].competitions.hasOwnProperty(comp.name)) {
             players[player].competitions[comp.name] = {
-              name: comp.name, playerScores: comp.scores[player]
-            }
+              name: comp.name,
+              playerScores: comp.scores[player],
+            };
           }
         }
-
         return players;
-      }, {} as { [key:string]: Player });
+      }, {} as { [key: string]: Player });
 
       return Object.values(players);
     },
-    worst() {
-      for(let player of this.players) {
-        console.log(player.name, this.calcPlayerAvgPar(player.competitions))
-      }
-      return 'me'
+    playersFull(): PlayerRow[] {
+      return this.players.map(p => ({
+        ...p,
+        playedHoles: this.calcPlayerTotalPlayedHoles(p),
+        playedRounds: Object.values(p.competitions).length,
+        totalThrows: this.calcPlayerTotalThrows(p),
+        totalPossiblePar: this.calcPlayerPossibleParTotal(p),
+        totalPar: this.calcPlayerTotalThrows(p) - this.calcPlayerPossibleParTotal(p),
+        noBirdies: this.calcPlayerNumberOfScore(p, (score, par) => score - par === -1 ? 1 : 0),
+        noPar: this.calcPlayerNumberOfScore(p, (score, par) => score - par === 0 ? 1 : 0),
+        noBoogies: this.calcPlayerNumberOfScore(p, (score, par) => score - par === 1 ? 1 : 0),
+        noAboveBoogies: this.calcPlayerNumberOfScore(p, (score, par) => score - par > 1 ? 1 : 0),
+        avgThrowsPerHole: Math.round((this.calcPlayerTotalThrows(p) /this.calcPlayerTotalPlayedHoles(p)) * 100) / 100,
+        avgParPerRound: Math.round((this.calcPlayerTotalThrows(p) - this.calcPlayerPossibleParTotal(p)) / Object.values(p.competitions).length)
+      }))
     }
   },
 });
@@ -236,12 +232,36 @@ export default defineComponent({
   backgorund-color: red;
 }
 
-table, th, td {
-  border: solid 1px;
+tr {
+  border-bottom: solid 1px #e2e8f0;
 }
 
-th, td {
-  padding: 5px;
+tr:nth-child(even), thead {
+  background:#e5e7eb;
 }
 
+table {
+  margin: 20px;
+}
+
+th {
+  user-select: none;
+  cursor: pointer;
+}
+
+th:first-child, td:first-child {
+  padding-left: 15px;
+}
+th:last-child, td:last-child {
+  padding-right: 15px;
+}
+
+th:hover {
+  color: #6b7280;
+}
+
+th,
+td {
+  padding: 10px 5px;
+}
 </style>
