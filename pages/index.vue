@@ -12,7 +12,7 @@
       </button>
     </section>
     <section id="table" class="bg-rose-100 snap-start p-10">
-      <table class="table-auto text-gray-500">
+      <table class="table-auto w-full text-gray-500">
         <thead class="text-xs text-gray-700 uppercase bg-gray-50">
           <th v-for="h in headers" :key="h.value">
             {{ h.text }}
