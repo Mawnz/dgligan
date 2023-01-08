@@ -1,7 +1,9 @@
 <template>
   <div class="h-full snap-y overflow-y-auto">
     <section id="overview" class="bg-rose-100 snap-start p-10">
-      <h1>Tja va kul </h1>
+      <Highlight
+        :items="items"
+      ></Highlight>
       <button @click="goto('start')" class="downbtn rounded-[50%] h-20 w-20 bg-blue-200 p-2">
         <ArrowDownIcon class=""></ArrowDownIcon>
       </button>
@@ -26,14 +28,18 @@
           </tr>
         </tbody>
       </table>
+      <button @click="goto('overview')" class="downbtn rounded-[50%] h-20 w-20 bg-blue-200 p-2">
+        <ArrowUpIcon></ArrowUpIcon>
+      </button>
     </section>
   </div>
 </template>
 
 <script lang="ts">
-import { ArrowDownIcon } from "@heroicons/vue/24/outline";
+import { ArrowDownIcon, ArrowUpIcon } from "@heroicons/vue/24/outline";
 
 import { defineComponent } from "vue";
+import Highlight from "~~/components/Highlight.vue";
 
 interface Hole {
   number: number;
@@ -83,6 +89,8 @@ interface TableHeader {
 export default defineComponent({
   components: {
     ArrowDownIcon,
+    ArrowUpIcon,
+    Highlight
   },
   data() {
     return {
@@ -272,6 +280,12 @@ export default defineComponent({
         ),
       }));
     },
+    items(): any[] {
+      return this.playersFull.map(p => ({
+        name: p.name,
+        title: p.name
+      }))
+    }
   },
 });
 </script>
