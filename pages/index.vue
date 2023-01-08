@@ -1,15 +1,40 @@
 <template>
   <div class="h-full snap-y overflow-y-auto">
-    <section id="overview" class="bg-rose-100 snap-start p-10">
-      <Highlight
-        :items="items"
-      ></Highlight>
-      <button @click="goto('start')" class="downbtn rounded-[50%] h-20 w-20 bg-blue-200 p-2">
+    <section id="overview" class="bg-rose-100 snap-start p-10 h-full">
+      <TransitionRoot :show="true">
+        <TransitionChild
+          :enter="`transform transition duration-[400ms]`"
+          enter-from="opacity-0 scale-95"
+          enter-to="opacity-100 scale-100"
+          :leave="`transform duration-500 transition ease-in-out`"
+          leave-from="opacity-100 scale-100"
+          leave-to="opacity-0 scale-95"
+          v-for="(item, i) in items"
+          :key="item.name"
+          :style="{
+            'transition-delay': `${i * 500}ms`
+          }"
+        >
+          <div
+            class="item drop-shadow-lg rounded-lg p-10 bg-orange-50 mb-5"
+            @click="next"
+          >
+            {{ item.name }}
+          </div>
+        </TransitionChild>
+      </TransitionRoot>
+      <button
+        @click="goto('start')"
+        class="downbtn rounded-[50%] h-20 w-20 bg-blue-200 p-2"
+      >
         <ArrowDownIcon class=""></ArrowDownIcon>
       </button>
     </section>
     <section id="start" class="bg-rose-200 snap-start p-10">
-      <button @click="goto('table')" class="downbtn rounded-[50%] h-20 w-20 bg-blue-200 p-2">
+      <button
+        @click="goto('table')"
+        class="downbtn rounded-[50%] h-20 w-20 bg-blue-200 p-2"
+      >
         <ArrowDownIcon></ArrowDownIcon>
       </button>
     </section>
@@ -28,7 +53,10 @@
           </tr>
         </tbody>
       </table>
-      <button @click="goto('overview')" class="downbtn rounded-[50%] h-20 w-20 bg-blue-200 p-2">
+      <button
+        @click="goto('overview')"
+        class="downbtn rounded-[50%] h-20 w-20 bg-blue-200 p-2"
+      >
         <ArrowUpIcon></ArrowUpIcon>
       </button>
     </section>
@@ -40,6 +68,8 @@ import { ArrowDownIcon, ArrowUpIcon } from "@heroicons/vue/24/outline";
 
 import { defineComponent } from "vue";
 import Highlight from "~~/components/Highlight.vue";
+
+import { TransitionRoot, TransitionChild } from "@headlessui/vue";
 
 interface Hole {
   number: number;
@@ -90,7 +120,9 @@ export default defineComponent({
   components: {
     ArrowDownIcon,
     ArrowUpIcon,
-    Highlight
+    Highlight,
+    TransitionChild,
+    TransitionRoot,
   },
   data() {
     return {
@@ -183,15 +215,24 @@ export default defineComponent({
     });
   },
   methods: {
+    //
+    // Scrollt smoothly to section
+    //
     goto(id: string) {
-      this.$el.querySelector(`#${id}`).scrollIntoView({ behavior: 'smooth' })
+      this.$el.querySelector(`#${id}`).scrollIntoView({ behavior: "smooth" });
     },
+    //
+    // Sum of played holes for player
+    //
     calcPlayerTotalPlayedHoles(player: Player): number {
       return Object.values(player.competitions).reduce(
         (throws, comp) => throws + comp.playerScores!.length ?? 0,
         0
       );
     },
+    //
+    // Sum of throws per hole for player
+    //
     calcPlayerTotalThrows(player: Player): number {
       return Object.values(player.competitions).reduce(
         (throws, comp) =>
@@ -200,6 +241,9 @@ export default defineComponent({
         0
       );
     },
+    //
+    // Sum all par for player on played holes
+    //
     calcPlayerPossibleParTotal(player: Player): number {
       return Object.values(player.competitions).reduce(
         (total, comp) =>
@@ -207,6 +251,9 @@ export default defineComponent({
         0
       );
     },
+    //
+    // Used to calculate number of (birdies, par, boogey etc)
+    //
     calcPlayerNumberOfScore(
       player: Player,
       scoreComparison: (score: number, par: number) => number
@@ -221,6 +268,12 @@ export default defineComponent({
         0
       );
     },
+    //
+    // Calc competition score
+    //
+    calcCompScore(comp: Competition): number {
+      return comp.playerScores?.reduce((tot, { par, score }) => tot += (score - par), 0) ?? 0;
+    }
   },
   computed: {
     competitions(): Competition[] {
@@ -281,20 +334,20 @@ export default defineComponent({
       }));
     },
     items(): any[] {
-      return this.playersFull.map(p => ({
+      return this.playersFull.map((p) => ({
         name: p.name,
-        title: p.name
-      }))
-    }
+        title: p.name,
+      }));
+    },
   },
 });
 </script>
 
 <style scoped>
 section {
-  height: 100%;
   width: 100%;
   position: relative;
+  height: 100%;
 }
 
 .downbtn {
@@ -310,13 +363,9 @@ section {
     transform: translate(-50%, 0);
   }
 
-
-
   50% {
     transform: translate(-50%, 8px);
   }
-
-
 
   100% {
     transform: translate(-50%, 0);
