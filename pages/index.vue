@@ -1,6 +1,8 @@
 <template>
-  <div class="h-full snap-y overflow-y-auto">
-    <section id="overview" class="bg-rose-100 snap-start p-10 h-full">
+  <div
+    class="bg-background dark:bg-background-dark h-full snap-y overflow-y-auto flex flex-col"
+  >
+    <section id="overview" class="snap-start p-10">
       <TransitionRoot :show="true">
         <TransitionChild
           :enter="`transform transition duration-[400ms]`"
@@ -12,33 +14,29 @@
           v-for="(item, i) in items"
           :key="item.name"
           :style="{
-            'transition-delay': `${i * 500}ms`
+            'transition-delay': `${i * 500}ms`,
           }"
         >
           <div
-            class="item drop-shadow-lg rounded-lg p-10 bg-orange-50 mb-5"
+            class="
+              item
+              drop-shadow-lg
+              rounded-lg
+              p-10
+              mb-5
+              dark:bg-secondary-dark
+              bg-secondary-light
+            "
             @click="next"
           >
             {{ item.name }}
           </div>
         </TransitionChild>
       </TransitionRoot>
-      <button
-        @click="goto('start')"
-        class="downbtn rounded-[50%] h-20 w-20 bg-blue-200 p-2"
-      >
-        <ArrowDownIcon class=""></ArrowDownIcon>
-      </button>
     </section>
-    <section id="start" class="bg-rose-200 snap-start p-10">
-      <button
-        @click="goto('table')"
-        class="downbtn rounded-[50%] h-20 w-20 bg-blue-200 p-2"
-      >
-        <ArrowDownIcon></ArrowDownIcon>
-      </button>
+    <section id="start" class="snap-start p-10">
     </section>
-    <section id="table" class="bg-rose-100 snap-start p-10">
+    <section id="table" class="snap-start p-10">
       <table class="table-auto w-full text-gray-500">
         <thead class="text-xs text-gray-700 uppercase bg-gray-50">
           <th v-for="h in headers" :key="h.value">
@@ -53,23 +51,35 @@
           </tr>
         </tbody>
       </table>
-      <button
-        @click="goto('overview')"
-        class="downbtn rounded-[50%] h-20 w-20 bg-blue-200 p-2"
-      >
-        <ArrowUpIcon></ArrowUpIcon>
-      </button>
     </section>
+      <button
+        @click="goto()"
+        class="
+          downbtn
+          rounded-[50%]
+          h-20
+          w-20
+          primary
+          p-2
+          dark:bg-secondary-dark
+          bg-secondary-light
+        "
+      >
+        <ArrowDownIcon v-if="notLast" class=""></ArrowDownIcon>
+        <ArrowUpIcon v-else></ArrowUpIcon>
+      </button>
   </div>
 </template>
 
 <script lang="ts">
 import { ArrowDownIcon, ArrowUpIcon } from "@heroicons/vue/24/outline";
 
-import { defineComponent } from "vue";
+import { CreateComponentPublicInstance, defineComponent } from "vue";
 import Highlight from "~~/components/Highlight.vue";
 
 import { TransitionRoot, TransitionChild } from "@headlessui/vue";
+
+import { debounce } from 'lodash';
 
 interface Hole {
   number: number;
@@ -127,6 +137,7 @@ export default defineComponent({
   data() {
     return {
       comps: {} as { [key: string]: Competition },
+      notLast: true,
       headers: [
         { text: "Namn", value: "name" },
         { text: "Totalt spelade hål", value: "playedHoles" },
@@ -214,7 +225,17 @@ export default defineComponent({
       });
     });
   },
+  mounted() {
+    this.$el.addEventListener('scroll', this.handleScroll);
+  },
+  beforeUnmount() {
+    this.$el.removeEventListener('scroll', this.handleScroll);
+  },
   methods: {
+    handleScroll: debounce(function(this: any, e: Event) {
+      const { top, height } = document.querySelector('section#table')!.getBoundingClientRect();
+      this.notLast = top > height / 2;
+    }, 25),
     //
     // Scrollt smoothly to section
     //
@@ -272,8 +293,13 @@ export default defineComponent({
     // Calc competition score
     //
     calcCompScore(comp: Competition): number {
-      return comp.playerScores?.reduce((tot, { par, score }) => tot += (score - par), 0) ?? 0;
-    }
+      return (
+        comp.playerScores?.reduce(
+          (tot, { par, score }) => (tot += score - par),
+          0
+        ) ?? 0
+      );
+    },
   },
   computed: {
     competitions(): Competition[] {
@@ -344,12 +370,14 @@ export default defineComponent({
 </script>
 
 <style scoped>
+.snap-y {
+  min-height: 100%;
+}
 section {
   width: 100%;
   position: relative;
-  height: 100%;
+  min-height: 100%;
 }
-
 .downbtn {
   position: absolute;
   left: 50%;
