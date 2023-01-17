@@ -1,19 +1,24 @@
 // https://huemint.com/website-1/
 // https://fontjoy.com/
 module.exports = {
+	darkMode: 'class',
 	theme: {
 		extend: {
 			colors: {
 				'primary': {
-					light: '#1f262d',
-					dark: '#f3f2f7',
+					light: '#cde9f7',
+					dark: '#1089cf',
 				},
 				'secondary': {
-					light: '#cf5758',
-					dark: '#cf5758',
+					light: '#96c9ef',
+					dark: '#96c9ef',
+				},
+				'tertiary': {
+					light: '#1089cf',
+					dark: '#cde9f7',
 				},
 				'background': {
-					light: '#f3f2f7',
+					light: '#fcffff',
 					dark: '#1f262d',
 				}
 			},

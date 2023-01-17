@@ -1,5 +1,6 @@
 <template>
   <Disclosure as="nav" class="bg-gray-800" v-slot="{ open }">
+    <button class="primary-light bg-background-light" @click="toggleDarkMode">Darkmode</button>
     <div class="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
       <div class="relative flex h-16 items-center justify-between">
         <div class="absolute inset-y-0 left-0 flex items-center sm:hidden">
@@ -65,4 +66,12 @@ import { Bars3Icon, BellIcon, XMarkIcon, UserCircleIcon } from '@heroicons/vue/2
 const navigation = [
   { name: 'Home', href: '/', current: true },
 ]
+
+function toggleDarkMode() {
+  if(document.querySelector('html').classList.contains('dark')) {
+    document.querySelector('html').classList.remove('dark');
+  } else {
+    document.querySelector('html').classList.add('dark');
+  }
+}
 </script>

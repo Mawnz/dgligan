@@ -1,8 +1,15 @@
 <template>
   <div
-    class="bg-background dark:bg-background-dark h-full snap-y overflow-y-auto flex flex-col"
+    class="
+      bg-background-light
+      dark:bg-background-dark
+      h-full
+      snap-y
+      overflow-y-auto
+      flex flex-col
+    "
   >
-    <section id="overview" class="snap-start p-10">
+    <!-- <section id="overview" class="snap-start p-10">
       <TransitionRoot :show="true">
         <TransitionChild
           :enter="`transform transition duration-[400ms]`"
@@ -33,18 +40,31 @@
           </div>
         </TransitionChild>
       </TransitionRoot>
-    </section>
-    <section id="start" class="snap-start p-10">
-    </section>
+    </section> -->
+    <!-- <section id="start" class="snap-start p-10">
+    </section> -->
     <section id="table" class="snap-start p-10">
       <table class="table-auto w-full text-gray-500">
-        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-          <th v-for="h in headers" :key="h.value">
+        <thead class="
+          bg-secondary-light
+          text-xs text-gray-600
+          dark:text-gray-200
+          uppercase
+        ">
+          <th v-for="h in headers" :key="h.value" @click="sort(h)">
             {{ h.text }}
           </th>
         </thead>
         <tbody>
-          <tr v-for="player in playersFull" :key="player.name">
+          <tr
+            v-for="player in playersFull"
+            :key="player.name"
+            class="
+              even:bg-secondary-light
+              text-gray-600
+              dark:text-gray-200
+            "
+          >
             <td v-for="h in headers" :key="h">
               {{ h.curated ? h.curated(player[h.value]) : player[h.value] }}
             </td>
@@ -52,7 +72,7 @@
         </tbody>
       </table>
     </section>
-      <button
+    <!-- <button
         @click="goto()"
         class="
           downbtn
@@ -67,7 +87,7 @@
       >
         <ArrowDownIcon v-if="notLast" class=""></ArrowDownIcon>
         <ArrowUpIcon v-else></ArrowUpIcon>
-      </button>
+      </button> -->
   </div>
 </template>
 
@@ -79,7 +99,7 @@ import Highlight from "~~/components/Highlight.vue";
 
 import { TransitionRoot, TransitionChild } from "@headlessui/vue";
 
-import { debounce } from 'lodash';
+import { debounce } from "lodash";
 
 interface Hole {
   number: number;
@@ -136,6 +156,8 @@ export default defineComponent({
   },
   data() {
     return {
+      sortBy: null as TableHeader | null,
+      sortDesc: true,
       comps: {} as { [key: string]: Competition },
       notLast: true,
       headers: [
@@ -226,16 +248,26 @@ export default defineComponent({
     });
   },
   mounted() {
-    this.$el.addEventListener('scroll', this.handleScroll);
+    this.$el.addEventListener("scroll", this.handleScroll);
   },
   beforeUnmount() {
-    this.$el.removeEventListener('scroll', this.handleScroll);
+    this.$el.removeEventListener("scroll", this.handleScroll);
   },
   methods: {
-    handleScroll: debounce(function(this: any, e: Event) {
-      const { top, height } = document.querySelector('section#table')!.getBoundingClientRect();
+    handleScroll: debounce(function (this: any, e: Event) {
+      const { top, height } = document
+        .querySelector("section#table")!
+        .getBoundingClientRect();
       this.notLast = top > height / 2;
     }, 25),
+    sort(h: TableHeader) {
+      if(this.sortBy?.value === h.value) {
+        this.sortDesc = !this.sortDesc;
+      } else {
+        this.sortDesc = true;
+        this.sortBy = h;
+      }
+    },
     //
     // Scrollt smoothly to section
     //
@@ -357,7 +389,18 @@ export default defineComponent({
           (this.calcPlayerTotalThrows(p) - this.calcPlayerPossibleParTotal(p)) /
             Object.values(p.competitions).length
         ),
-      }));
+      }))
+      .sort((a: any, b: any) => {
+        if(this.sortBy) {
+          if(a[this.sortBy!.value] > b[this.sortBy!.value]) {
+            return this.sortDesc ? -1 : 1;
+          }
+          if(a[this.sortBy!.value] < b[this.sortBy!.value]) {
+            return this.sortDesc ? 1 : -1;
+          }
+        }
+        return 0;
+      });
     },
     items(): any[] {
       return this.playersFull.map((p) => ({
@@ -398,15 +441,6 @@ section {
   100% {
     transform: translate(-50%, 0);
   }
-}
-
-tr {
-  border-bottom: solid 1px #e2e8f0;
-}
-
-tr:nth-child(even),
-thead {
-  background: #e5e7eb;
 }
 
 th {
