@@ -43,7 +43,38 @@
     </section> -->
     <!-- <section id="start" class="snap-start p-10">
     </section> -->
-    <section id="table" class="snap-start p-10">
+    <section id="table" class="snap-start">
+      <table class="table-auto w-full">
+        <thead
+          class="
+            text-center
+            dark:border-white
+            border-black border-y
+            bg-primary-light
+            dark:bg-primary-dark dark:text-white
+          "
+        >
+          <th :colspan="overviewHeaders.length">Bästa spelarna 2023</th>
+        </thead>
+        <tbody>
+          <tr
+            class="
+              text-center
+              dark:border-white
+              border-black border-y
+              bg-secondary-light
+              dark:bg-secondary-dark
+            "
+            v-for="player in playersShort"
+            :key="player.name"
+          >
+            <td v-for="h in overviewHeaders" :key="h.value">
+              {{ player[h.value] }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <!--
       <table class="table-auto w-full text-gray-500">
         <thead class="
           bg-secondary-light
@@ -71,6 +102,7 @@
           </tr>
         </tbody>
       </table>
+      -->
     </section>
     <!-- <button
         @click="goto()"
@@ -127,17 +159,18 @@ interface Player {
 }
 
 interface PlayerRow extends Player {
-  playedHoles: number;
-  totalThrows: number;
-  playedRounds: number;
-  avgThrowsPerHole: number;
-  totalPossiblePar: number;
-  totalPar: number;
-  avgParPerRound: number;
-  noBirdies: number;
-  noPar: number;
-  noBoogies: number;
-  noAboveBoogies: number;
+  rank?: number;
+  playedHoles?: number;
+  totalThrows?: number;
+  playedRounds?: number;
+  avgThrowsPerHole?: number;
+  totalPossiblePar?: number;
+  totalPar?: number;
+  avgParPerRound?: number;
+  noBirdies?: number;
+  noPar?: number;
+  noBoogies?: number;
+  noAboveBoogies?: number;
 }
 
 interface TableHeader {
@@ -160,6 +193,11 @@ export default defineComponent({
       sortDesc: true,
       comps: {} as { [key: string]: Competition },
       notLast: true,
+      overviewHeaders: [
+        { text: "Rank", value: "rank" },
+        { text: "Namn", value: "name" },
+        { text: "Poäng", value: "score" },
+      ],
       headers: [
         { text: "Namn", value: "name" },
         { text: "Totalt spelade hål", value: "playedHoles" },
@@ -261,7 +299,7 @@ export default defineComponent({
       this.notLast = top > height / 2;
     }, 25),
     sort(h: TableHeader) {
-      if(this.sortBy?.value === h.value) {
+      if (this.sortBy?.value === h.value) {
         this.sortDesc = !this.sortDesc;
       } else {
         this.sortDesc = true;
@@ -332,6 +370,54 @@ export default defineComponent({
         ) ?? 0
       );
     },
+    //
+    // Calc position of comp
+    //
+    calcCompRank(player: string, comp?: Competition): number {
+      if (!comp) {
+        return 0;
+      }
+      return (
+        Object.entries(comp.scores as any)
+          .reduce(
+            (totals: any, cur: any) => {
+              return [
+                ...totals,
+                {
+                  name: cur[0],
+                  total: Object.values(cur[1]).reduce(
+                    (sum: any, { par, score }: any) => sum + (score - par),
+                    0
+                  ),
+                }
+              ]
+            }),
+            []
+          )
+          .sort((a: any, b: any) => {
+            console.log(a.total, b.total)
+            if (a.total < b.total) return 1;
+            if (a.total > b.total) return -1;
+            return 0;
+          })
+          .findIndex((p: any) => p.name === player) + 1
+    },
+    calcPlayerScoreBestFour(p: Player): number {
+      return Object.values(p.competitions)
+        .reduce(
+          (ranks: number[], comp) => [
+            ...ranks,
+            this.calcCompRank(
+              p.name,
+              this.competitions.find((c) => c.name === comp.name)
+            ),
+          ],
+          []
+        )
+        .sort()
+        .splice(0, 3)
+        .reduce((sum, cur) => sum + cur, 0);
+    },
   },
   computed: {
     competitions(): Competition[] {
@@ -358,49 +444,67 @@ export default defineComponent({
 
       return Object.values(players);
     },
+    playersShort(): PlayerRow[] {
+      return this.players
+        .map((p) => ({
+          ...p,
+          score: this.calcPlayerScoreBestFour(p),
+        }))
+        .sort((a, b) => {
+          if (a.score < b.score) return 1;
+          if (a.score > b.score) return -1;
+          return 0;
+        })
+        .map((p, i) => ({
+          ...p,
+          rank: i + 1,
+        }));
+    },
     playersFull(): PlayerRow[] {
-      return this.players.map((p) => ({
-        ...p,
-        playedHoles: this.calcPlayerTotalPlayedHoles(p),
-        playedRounds: Object.values(p.competitions).length,
-        totalThrows: this.calcPlayerTotalThrows(p),
-        totalPossiblePar: this.calcPlayerPossibleParTotal(p),
-        totalPar:
-          this.calcPlayerTotalThrows(p) - this.calcPlayerPossibleParTotal(p),
-        noBirdies: this.calcPlayerNumberOfScore(p, (score, par) =>
-          score - par === -1 ? 1 : 0
-        ),
-        noPar: this.calcPlayerNumberOfScore(p, (score, par) =>
-          score - par === 0 ? 1 : 0
-        ),
-        noBoogies: this.calcPlayerNumberOfScore(p, (score, par) =>
-          score - par === 1 ? 1 : 0
-        ),
-        noAboveBoogies: this.calcPlayerNumberOfScore(p, (score, par) =>
-          score - par > 1 ? 1 : 0
-        ),
-        avgThrowsPerHole:
-          Math.round(
-            (this.calcPlayerTotalThrows(p) /
-              this.calcPlayerTotalPlayedHoles(p)) *
-              100
-          ) / 100,
-        avgParPerRound: Math.round(
-          (this.calcPlayerTotalThrows(p) - this.calcPlayerPossibleParTotal(p)) /
-            Object.values(p.competitions).length
-        ),
-      }))
-      .sort((a: any, b: any) => {
-        if(this.sortBy) {
-          if(a[this.sortBy!.value] > b[this.sortBy!.value]) {
-            return this.sortDesc ? -1 : 1;
+      return this.players
+        .map((p) => ({
+          ...p,
+          playedHoles: this.calcPlayerTotalPlayedHoles(p),
+          playedRounds: Object.values(p.competitions).length,
+          totalThrows: this.calcPlayerTotalThrows(p),
+          totalPossiblePar: this.calcPlayerPossibleParTotal(p),
+          totalPar:
+            this.calcPlayerTotalThrows(p) - this.calcPlayerPossibleParTotal(p),
+          noBirdies: this.calcPlayerNumberOfScore(p, (score, par) =>
+            score - par === -1 ? 1 : 0
+          ),
+          noPar: this.calcPlayerNumberOfScore(p, (score, par) =>
+            score - par === 0 ? 1 : 0
+          ),
+          noBoogies: this.calcPlayerNumberOfScore(p, (score, par) =>
+            score - par === 1 ? 1 : 0
+          ),
+          noAboveBoogies: this.calcPlayerNumberOfScore(p, (score, par) =>
+            score - par > 1 ? 1 : 0
+          ),
+          avgThrowsPerHole:
+            Math.round(
+              (this.calcPlayerTotalThrows(p) /
+                this.calcPlayerTotalPlayedHoles(p)) *
+                100
+            ) / 100,
+          avgParPerRound: Math.round(
+            (this.calcPlayerTotalThrows(p) -
+              this.calcPlayerPossibleParTotal(p)) /
+              Object.values(p.competitions).length
+          ),
+        }))
+        .sort((a: any, b: any) => {
+          if (this.sortBy) {
+            if (a[this.sortBy!.value] > b[this.sortBy!.value]) {
+              return this.sortDesc ? -1 : 1;
+            }
+            if (a[this.sortBy!.value] < b[this.sortBy!.value]) {
+              return this.sortDesc ? 1 : -1;
+            }
           }
-          if(a[this.sortBy!.value] < b[this.sortBy!.value]) {
-            return this.sortDesc ? 1 : -1;
-          }
-        }
-        return 0;
-      });
+          return 0;
+        });
     },
     items(): any[] {
       return this.playersFull.map((p) => ({
@@ -443,26 +547,15 @@ section {
   }
 }
 
-th {
+th,
+td {
   user-select: none;
   cursor: pointer;
-}
-
-th:first-child,
-td:first-child {
-  padding-left: 15px;
-}
-th:last-child,
-td:last-child {
-  padding-right: 15px;
-}
-
-th:hover {
-  color: #6b7280;
 }
 
 th,
 td {
   padding: 10px 5px;
+  font-size: 0.8rem;
 }
 </style>

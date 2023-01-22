@@ -1,6 +1,10 @@
-# Nuxt 3 Minimal Starter
+# DGLigan2022
+Landningssida med overview på ongoing season, typ dashboard med lite stats samt tabell med ställning i nuvarande säsong. Kan ha moduler med roliga stats som antingen ligger fritt i separata kort eller om det är en slideshow på olika stats.
 
-Look at the [Nuxt 3 documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Möjlighet att navigera till saker så som:
+Rankings -> sida med tabell över säsong för år XXXX (där man kan välja vilka år att kolla på , 2022 / 2023 som det är nu)
+Players -> Lista med spelare, där det står dels för nuvarande säsong statistik på spelaren, en bild, player profile typ. 
+LIVE -> Visar LIVE scoring om vi är ute och spelar, en tabell som visar score kort helt enkelt
 
 ## Setup
 
