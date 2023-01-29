@@ -7,6 +7,7 @@
       snap-y
       overflow-y-auto
       flex flex-col
+      z-0
     "
   >
     <!-- <section id="overview" class="snap-start p-10">
@@ -43,7 +44,7 @@
     </section> -->
     <!-- <section id="start" class="snap-start p-10">
     </section> -->
-    <section id="table" class="snap-start">
+    <section id="table">
       <table class="table-auto w-full">
         <thead
           class="
@@ -104,6 +105,73 @@
       </table>
       -->
     </section>
+    <section id="stats" class="py-10 px-5">
+      <h1
+        class="
+          p-3
+          mb-5
+          mx-20
+          text-center
+          rounded-full
+          bg-primary-light
+          dark:bg-primary-dark dark:text-white
+          border-black
+          dark:border-white
+          drop-shadow-lg
+        "
+      >
+        Statistik
+      </h1>
+      <div class="grid grid-cols-2 gap-10 text-black dark:text-white">
+        <div
+          v-for="i in new Array(6)"
+          :key="i"
+          class="
+            p-3
+            aspect-square
+            bg-primary-light
+            dark:bg-primary-dark
+            drop-shadow-lg
+            rounded-lg
+            flex flex-col
+            justify-between
+          "
+        >
+          <h3>Längsta kastet - 2023</h3>
+          <div
+            class="
+              rounded-xl
+              py-[5px]
+              px-[15px]
+              bg-orange-400
+              flex
+              justify-between
+            "
+          >
+            <span>Jonas</span><span class="float-right">140m</span>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section id="navigate" class="flex flex-col mx-10">
+      <div
+        v-for="i in new Array(5)"
+        :key="i"
+        class="
+          p-5 my-3
+          flex
+          justify-between place-items-center
+          rounded-xl
+          bg-primary-light
+          dark:bg-primary-dark
+        "
+      >
+        <h2 class="font-bold">Ranking - 2023</h2>
+        <button class="bg-orange-400 rounded-full p-2">
+          <ArrowSmallRightIcon class="h-[20px] stroke-2 text-white"></ArrowSmallRightIcon>
+        </button>
+      </div>
+    </section>
     <!-- <button
         @click="goto()"
         class="
@@ -124,7 +192,7 @@
 </template>
 
 <script lang="ts">
-import { ArrowDownIcon, ArrowUpIcon } from "@heroicons/vue/24/outline";
+import { ArrowDownIcon, ArrowUpIcon, ArrowSmallRightIcon } from "@heroicons/vue/24/outline";
 
 import { CreateComponentPublicInstance, defineComponent } from "vue";
 import Highlight from "~~/components/Highlight.vue";
@@ -186,6 +254,7 @@ export default defineComponent({
     Highlight,
     TransitionChild,
     TransitionRoot,
+    ArrowSmallRightIcon
   },
   data() {
     return {
@@ -378,29 +447,27 @@ export default defineComponent({
         return 0;
       }
       return (
-        Object.entries(comp.scores as any)
-          .reduce(
-            (totals: any, cur: any) => {
-              return [
-                ...totals,
-                {
-                  name: cur[0],
-                  total: Object.values(cur[1]).reduce(
-                    (sum: any, { par, score }: any) => sum + (score - par),
-                    0
-                  ),
-                }
-              ]
-            }),
-            []
-          )
+        (Object.entries(comp.scores as any).reduce((totals: any, cur: any) => {
+          return [
+            ...totals,
+            {
+              name: cur[0],
+              total: Object.values(cur[1]).reduce(
+                (sum: any, { par, score }: any) => sum + (score - par),
+                0
+              ),
+            },
+          ];
+        }),
+        [])
           .sort((a: any, b: any) => {
-            console.log(a.total, b.total)
+            console.log(a.total, b.total);
             if (a.total < b.total) return 1;
             if (a.total > b.total) return -1;
             return 0;
           })
           .findIndex((p: any) => p.name === player) + 1
+      );
     },
     calcPlayerScoreBestFour(p: Player): number {
       return Object.values(p.competitions)
@@ -517,36 +584,6 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.snap-y {
-  min-height: 100%;
-}
-section {
-  width: 100%;
-  position: relative;
-  min-height: 100%;
-}
-.downbtn {
-  position: absolute;
-  left: 50%;
-  bottom: 20px;
-  transform: translateX(-50%);
-  animation: pointdown 1s infinite ease-in-out;
-}
-
-@keyframes pointdown {
-  0% {
-    transform: translate(-50%, 0);
-  }
-
-  50% {
-    transform: translate(-50%, 8px);
-  }
-
-  100% {
-    transform: translate(-50%, 0);
-  }
-}
-
 th,
 td {
   user-select: none;
