@@ -16,7 +16,7 @@ FROM base as build
 COPY --link package.json package-lock.json .
 RUN npm install --production=false
 
-COPY --link . .
+COPY --link . /src
 
 RUN npm run build
 RUN npm prune
